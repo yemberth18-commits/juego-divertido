@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JUEGO DIVERTIDO</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+body { margin:0; font-family:'Press Start 2P', monospace; background:#0a0a0a; color:#00ffea; }
+header { position:fixed; top:0; width:100%; background:rgba(0,0,0,0.8); z-index:1000; display:flex; justify-content:space-between; align-items:center; padding:10px 20px; border-bottom:2px solid #00ffea;}
+header h1 { font-size:1.2rem; color:#00ffea; }
+nav ul { list-style:none; display:flex; gap:10px; }
+nav ul li a { text-decoration:none; color:#00ffea; }
+section { min-height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:80px 20px;}
+section h2 { color:#ff00ff; margin-bottom:20px;}
+.btn { background:#ff00ff; color:#0a0a0a; padding:10px 20px; border-radius:8px; text-decoration:none; margin-top:10px; display:inline-block; cursor:pointer; border:none; }
+#gameArea, #memory, #jumpGame { background:#111; margin-top:20px; border-radius:10px; position:relative;}
+#maze { width:300px; height:300px; display:grid; grid-template-columns:repeat(10,1fr); grid-template-rows:repeat(10,1fr); gap:2px;}
+#player, #jumper { width:30px; height:30px; background:#00ffea; position:absolute;}
+audio { display:none;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>JUEGO DIVERTIDO</h1>
+<nav>
+<ul>
+<li><a href="#inicio">Inicio</a></li>
+<li><a href="#juego1">Atrapa</a></li>
+<li><a href="#juego2">Memoria</a></li>
+<li><a href="#juego3">Laberinto</a></li>
+<li><a href="#juego4">Salto</a></li>
+</ul>
+</nav>
+</header>
+
+<section id="inicio">
+<h2>Bienvenido a JUEGO DIVERTIDO</h2>
+<p>Explora nuestros mini-juegos interactivos</p>
+<a href="#juego1" class="btn">Jugar Ahora</a>
+</section>
+
+<!-- Juego 1: Atrapa el objeto -->
+<section id="juego1">
+<h2>Atrapa el objeto</h2>
+<p>Puntos: <span id="score">0</span></p>
+<div id="gameArea" style="width:300px; height:200px;"></div>
+<button id="startGame" class="btn">Iniciar Juego</button>
+</section>
+
+<!-- Juego 2: Memoria -->
+<section id="juego2">
+<h2>Memoria</h2>
+<div id="memory" style="display:grid; grid-template-columns:repeat(4,70px); gap:10px;"></div>
+<button id="startMemory" class="btn">Iniciar Memoria</button>
+</section>
+
+<!-- Juego 3: Mini Laberinto -->
+<section id="juego3">
+<h2>Mini Laberinto</h2>
+<div id="maze"></div>
+<p id="mazeMsg"></p>
+<button id="startMaze" class="btn">Reiniciar Laberinto</button>
+</section>
+
+<!-- Juego 4: Salta los obstáculos -->
+<section id="juego4">
+<h2>Salta los obstáculos</h2>
+<p>Puntos: <span id="jumpScore">0</span></p>
+<div id="jumpGame" style="width:400px; height:200px; overflow:hidden;">
+<div id="jumper" style="bottom:0; left:50px;"></div>
+</div>
+<p id="jumpMsg"></p>
+<button id="startJump" class="btn">Iniciar Juego</button>
+</section>
+
+<audio id="bgMusic" loop>
+<source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+</audio>
+<button id="audioControl" class="btn">🎵 Reproducir Música</button>
+
+<script>
+// -------------------- Música --------------------
+const bgMusic = document.getElementById('bgMusic');
+const audioControl = document.getElementById('audioControl');
+audioControl.addEventListener('click', () => {
+if(bgMusic.paused){ bgMusic.play(); audioControl.textContent='🔇 Pausar Música'; }
+else{ bgMusic.pause(); audioControl.textContent='🎵 Reproducir Música'; }
+});
+
+// -------------------- Juego 1: Atrapa el objeto --------------------
+let score = 0;
+const gameArea = document.getElementById('gameArea');
+const scoreEl = document.getElementById('score');
+let gameInterval;
+document.getElementById('startGame').addEventListener('click', () => {
+score=0; scoreEl.textContent=score;
+gameArea.innerHTML=''; clearInterval(gameInterval);
+gameInterval=setInterval(() => {
+gameArea.innerHTML='';
+const target = document.createElement('div');
+target.style.width='50px'; target.style.height='50px'; target.style.borderRadius='50%';
+target.style.background='#ff00ff'; target.style.position='absolute';
+target.style.left=Math.random()*(gameArea.clientWidth-50)+'px';
+target.style.top=Math.random()*(gameArea.clientHeight-50)+'px';
+gameArea.appendChild(target);
+target.addEventListener('click',()=>{score++; scoreEl.textContent=score; target.remove();});
+},1000);
+});
+
+// -------------------- Juego 2: Memoria --------------------
+const memoryArea = document.getElementById('memory');
+let cardsArray = ['🍎','🍌','🍎','🍌','🍇','🍇','🍓','🍓'];
+let firstCard=null, lock=false;
+document.getElementById('startMemory').addEventListener('click', () => {
+memoryArea.innerHTML=''; cardsArray.sort(()=>0.5-Math.random());
+cardsArray.forEach(symbol=>{
+const card = document.createElement('div');
+card.textContent='❓'; card.style.fontSize='2rem'; card.style.padding='15px';
+card.style.background='#111'; card.style.color='#00ffea'; card.style.cursor='pointer';
+card.addEventListener('click',()=>flipCard(card,symbol));
+memoryArea.appendChild(card);
+});
+});
+function flipCard(card,symbol){
+if(lock || card.textContent!=='❓') return;
+card.textContent=symbol;
+if(!firstCard){ firstCard=card; }
+else { lock=true; setTimeout(()=>{
+if(firstCard.textContent!==card.textContent){ firstCard.textContent='❓'; card.textContent='❓'; }
+firstCard=null; lock=false;
+},500);}
+}
+
+// -------------------- Juego 3: Mini Laberinto --------------------
+const mazeDiv = document.getElementById('maze');
+const mazeMsg = document.getElementById('mazeMsg');
+let playerPos = {x:0,y:0};
+let goalPos = {x:9,y:9};
+let mazeGrid = [];
+const size = 10;
+function createMaze(){
+mazeDiv.innerHTML=''; mazeGrid=[];
+for(let y=0;y<size;y++){
+mazeGrid[y]=[];
+for(let x=0;x<size;x++){
+const cell = document.createElement('div');
+cell.style.border='1px solid #222'; cell.style.background='#111';
+mazeDiv.appendChild(cell); mazeGrid[y][x]=cell;
+}}
+// Obstáculos aleatorios
+for(let i=0;i<20;i++){
+let ox=Math.floor(Math.random()*size);
+let oy=Math.floor(Math.random()*size);
+if((ox===0 && oy===0) || (ox===goalPos.x && oy===goalPos.y)) continue;
+mazeGrid[oy][ox].style.background='#ff00ff';
+mazeGrid[oy][ox].classList.add('obstacle');
+}
+playerPos={x:0,y:0};
+drawMaze();
+mazeMsg.textContent='';
+}
+function drawMaze(){
+mazeGrid.forEach(row=>row.forEach(cell=>cell.style.border='1px solid #222'));
+mazeGrid[playerPos.y][playerPos.x].style.background='#00ffea';
+mazeGrid[goalPos.y][goalPos.x].style.background='#ff00ff';
+}
+document.addEventListener('keydown', e=>{
+let newX=playerPos.x; let newY=playerPos.y;
+if(e.key==='ArrowUp') newY--;
+if(e.key==='ArrowDown') newY++;
+if(e.key==='ArrowLeft') newX--;
+if(e.key==='ArrowRight') newX++;
+if(newX<0||newX>=size||newY<0||newY>=size) return;
+if(mazeGrid[newY][newX].classList.contains('obstacle')) return;
+playerPos.x=newX; playerPos.y=newY; drawMaze();
+if(playerPos.x===goalPos.x && playerPos.y===goalPos.y) mazeMsg.textContent='¡Felicidades, llegaste a la meta!';
+});
+document.getElementById('startMaze').addEventListener('click', createMaze);
+createMaze();
+
+// -------------------- Juego 4: Salta los obstáculos --------------------
+const jumper = document.getElementById('jumper');
+const jumpGame = document.getElementById('jumpGame');
+const jumpScoreEl = document.getElementById('jumpScore');
+const jumpMsg = document.getElementById('jumpMsg');
+let jumpScore=0, jumping=false, obstacles=[], obstacleInterval;
+document.getElementById('startJump').addEventListener('click', () => {
+jumpScore=0; jumpScoreEl.textContent=jumpScore; jumpMsg.textContent=''; jumper.style.bottom='0px';
+obstacles.forEach(o=>o.remove()); obstacles=[];
+clearInterval(obstacleInterval); startJumpGame();
+});
+function startJumpGame(){
+obstacleInterval=setInterval(()=>{
+const obs = document.createElement('div');
+obs.style.width='30px'; obs.style.height='30px'; obs.style.background='#ff00ff';
+obs.style.position='absolute'; obs.style.bottom='0px'; obs.style.left='400px';
+jumpGame.appendChild(obs); obstacles.push(obs);
+const move = setInterval(()=>{
+let left = parseInt(obs.style.left);
+if(left<=0){ obs.remove(); obstacles=obstacles.filter(o=>o!==obs); clearInterval(move); jumpScore++; jumpScoreEl.textContent=jumpScore; }
+else { obs.style.left=(left-5)+'px';
+let jumperBottom=parseInt(jumper.style.bottom) || 0;
+if(left<80 && left>50 && jumperBottom<30){ jumpMsg.textContent='¡Game Over!'; clearInterval(move); clearInterval(obstacleInterval); }
+}
+},50);
+},2000);
+}
+document.addEventListener('keydown', e=>{ if(e.code==='Space' && !jumping){ jump(); } });
+function jump(){ jumping=true; let height=0; const up=setInterval(()=>{ if(height>=100){ clearInterval(up); const down=setInterval(()=>{ if(height<=0){ clearInterval(down); jumping=false; jumper.style.bottom='0px'; } else { height-=10; jumper.style.bottom=height+'px'; } },20);} else { height+=10; jumper.style.bottom=height+'px'; } },20); }
+</script>
+
+</body>
+</html>
